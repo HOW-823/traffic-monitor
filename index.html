@@ -88,7 +88,7 @@
         .catch(error => { console.error('获取交通数据失败：', error); });
     }, 3000);
 
-    // 🚀 使用高德地图 Geolocation 插件进行定位
+    // ✅ 地图定位：从本地服务器获取 GPS 坐标并更新地图
     window.onload = function () {
       const map = new AMap.Map('map', {
         zoom: 13,
@@ -96,28 +96,27 @@
         resizeEnable: true
       });
 
-      AMap.plugin('AMap.Geolocation', function () {
-        const geolocation = new AMap.Geolocation({
-          enableHighAccuracy: true,
-          timeout: 10000,
-          convert: true,
-          showButton: true,
-          showMarker: true,
-          showCircle: true,
-          panToLocation: true,
-          zoomToAccuracy: true
-        });
+      const marker = new AMap.Marker({ map: map });
 
-        map.addControl(geolocation);
-        geolocation.getCurrentPosition(function (status, result) {
-          if (status === 'complete') {
-            console.log('定位成功：', result);
-          } else {
-            console.error('定位失败：', result);
-            alert('定位失败，请检查权限或网络环境。');
-          }
-        });
-      });
+      function updateMapPosition() {
+        fetch('http://localhost:5000/get_gps')
+          .then(response => response.json())
+          .then(data => {
+            if (data.lat && data.lng) {
+              const lnglat = [data.lng, data.lat];
+              marker.setPosition(lnglat);
+              map.setCenter(lnglat);
+            } else {
+              console.warn('定位数据无效：', data);
+            }
+          })
+          .catch(err => {
+            console.error('获取 GPS 定位失败', err);
+          });
+      }
+
+      setInterval(updateMapPosition, 3000);
+      updateMapPosition();
     };
   </script>
 </body>
